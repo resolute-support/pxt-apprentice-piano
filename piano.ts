@@ -60,11 +60,33 @@ enum RGB_COLOR {
 //% weight=20 color=#3333FF icon="\uf001"
 namespace Piano {
     let strip = neopixel.create(DigitalPin.P1, 4, NeoPixelMode.RGB);
+
+    function getPianoReading() {
+        pins.i2cWriteNumber(
+            80,
+            8,
+            NumberFormat.Int8LE,
+            false
+        )
+        const piano2Value = pins.i2cReadNumber(87, NumberFormat.UInt16BE, false)
+        const piano1Value = pins.i2cReadNumber(80, NumberFormat.Int16LE, false)
+        if (piano1Value != 0 || piano2Value != 0) {
+            if (piano1Value != 0) {
+                return piano1Value
+            } else {
+                return piano2Value
+            }
+        } else {
+            return 0
+        }
+    }
+
+
     //% blockId=tp_press 
     //% block="Key|%index|is pressed"
     //% weight=100
     export function TP_Press(index: TP_PIANO): boolean {
-        let TPval = pins.i2cReadNumber(0x57, NumberFormat.UInt16BE);
+        let TPval = getPianoReading();
 
         let keyup = 1;
         let press = false;
@@ -177,7 +199,7 @@ namespace Piano {
     //% weight=60    
     export function TP_PlayPiano(): void {
         //pins.analogSetPitchPin(AnalogPin.P0);
-        let TPval = pins.i2cReadNumber(0x57, NumberFormat.UInt16BE);
+        let TPval = getPianoReading()
         let temp = TPval >> 8;
         TPval = (TPval << 8) | temp;
 
