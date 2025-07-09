@@ -2,24 +2,25 @@
  * The piano key corresponds to the touch screen TPvalue.
  */
 enum PIANO {
-    None = 0x0000,
-    C = 0x0001,
-    Db = 0x0002,
-    D = 0x0004,
-    Eb = 0x0008,
+    None = 0,
+    C = 1,        // 0000 0000 0000 0001
+    Db = 2,       // 0000 0000 0000 0010
+    D = 4,        // 0000 0000 0000 0100
+    Eb = 8,       // 0000 0000 0000 1000
 
-    E = 0x0010,
-    F = 0x0020,
-    Gb = 0x0040,
-    G = 0x0080,
+    E = 16,       // 0000 0000 0001 0000
+    F = 32,       // 0000 0000 0010 0000
+    Gb = 64,      // 0000 0000 0100 0000
+    G = 128,      // 0000 0000 1000 0000
 
-    Ab = 0x0100,
-    A = 0x0200,
-    Bb = 0x0400,
-    B = 0x0800,
+    Ab = 256,     // 0000 0001 0000 0000
+    A = 512,      // 0000 0010 0000 0000
+    Bb = 1024,    // 0000 0100 0000 0000
+    B = 2048,     // 0000 1000 0000 0000
 
-    C1 = 0x1000,
+    C1 = 4096     // 0001 0000 0000 0000
 }
+
 /**
  * RGBLED order.
  */
@@ -61,25 +62,25 @@ enum RGB_COLOR {
 namespace Piano {
     let strip = neopixel.create(DigitalPin.P1, 4, NeoPixelMode.RGB);
 
-    function getPianoReading() {
-        pins.i2cWriteNumber(
-            80,
-            8,
-            NumberFormat.Int8LE,
-            false
-        )
-        const piano2Value = pins.i2cReadNumber(87, NumberFormat.UInt16BE, false)
-        const piano1Value = pins.i2cReadNumber(80, NumberFormat.Int16LE, false)
-        if (piano1Value != 0 || piano2Value != 0) {
-            if (piano1Value != 0) {
-                return piano1Value
-            } else {
-                return piano2Value
-            }
+    export function getPianoReading(): number {
+
+        pins.i2cWriteNumber(0x50, 8, NumberFormat.Int8LE, false);
+
+        let piano2Value = pins.i2cReadNumber(0x57, NumberFormat.UInt16BE, false);
+        let piano1Value = pins.i2cReadNumber(0x50, NumberFormat.Int16LE, false);
+
+        let TPval = 0;
+
+        if (piano1Value != 0) {
+            TPval = piano1Value;
         } else {
-            return 0
+            TPval = ((piano2Value & 0xFF) << 8) | ((piano2Value >> 8) & 0xFF);
         }
+
+        return TPval;
     }
+
+
 
 
     //% blockId=tp_press 
@@ -88,29 +89,14 @@ namespace Piano {
     export function Press(index: PIANO): boolean {
         let TPval = getPianoReading();
 
-        let keyup = 1;
-        let press = false;
-        if (keyup && TPval != PIANO.None) {
-            if (TPval != PIANO.None) {
-                keyup = 0;
-                let temp = TPval >> 8;
-                TPval = (TPval << 8) | temp;
-                if (index != 0) {
-                    if (TPval & index) {
-                        press = true;
-                    } else {
-                        press = false;
-                    }
-                } else {
-                    if (TPval == 0) {
-                        press = true;
-                    } else {
-                        press = false;
-                    }
-                }
+        if (TPval != PIANO.None) {
+            if (index != 0) {
+                return (TPval & index) !== 0;
+            } else {
+                return TPval === PIANO.None;
             }
         }
-        return press;
+        return false;
     }
 
     /**
@@ -195,61 +181,64 @@ namespace Piano {
     /**
     * Play the Piano
     */
-    //% blockId==PlayPiano" block="Play Piano"
+    //% blockId=PlayPiano" block="Play Piano"
     //% weight=60    
     export function PlayPiano(): void {
-        //pins.analogSetPitchPin(AnalogPin.P0);
-        let TPval = getPianoReading()
-        let temp = TPval >> 8;
-        TPval = (TPval << 8) | temp;
+        let TPval = getPianoReading();
 
-        if ((TPval & play) != 0) {
+        if ((TPval & play) !== 0) {
             TPval = TPval & play;
         } else if (TPval & PIANO.C) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(262);
         } else if (TPval & PIANO.Db) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(277);
         } else if (TPval & PIANO.D) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(294);
         } else if (TPval & PIANO.Eb) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(311);
         } else if (TPval & PIANO.E) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(330);
         } else if (TPval & PIANO.F) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(349);
         } else if (TPval & PIANO.Gb) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(370);
         } else if (TPval & PIANO.G) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(392);
         } else if (TPval & PIANO.Ab) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(415);
         } else if (TPval & PIANO.A) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(440);
         } else if (TPval & PIANO.Bb) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(466);
         } else if (TPval & PIANO.B) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(494);
         } else if (TPval & PIANO.C1) {
-            ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
+            showRandomColors();
             music.ringTone(523);
-        } else if (TPval == PIANO.None) {
+        } else if (TPval === PIANO.None) {
             ShowRGB(0, 0, 0, 0);
             music.ringTone(0);
         }
-        if (TPval != 0xffff)
+
+        if (TPval !== 0xffff) {
             play = TPval;
+        }
+    }
+
+    function showRandomColors(): void {
+        ShowRGB(SetRandomRGB(), SetRandomRGB(), SetRandomRGB(), SetRandomRGB());
     }
 
     /**
@@ -274,5 +263,4 @@ namespace Piano {
     export function Quiet(): void {
         music.stopAllSounds()
     }
-
 }

@@ -27,7 +27,7 @@ basic.showIcon(IconNames.Happy)
 
 basic.forever(function() {
     Piano.PlayPiano()
-    // let data = Piano.getPianoReading()
-    // serial.writeNumber(data)
-    // serial.writeLine("");
+    let data = Piano.getPianoReading()
+    serial.writeNumber(data)
+    serial.writeLine("");
 })
